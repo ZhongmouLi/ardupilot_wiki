@@ -197,6 +197,8 @@ def fetch_url(fetchurl: str, fpath: Optional[str] = None, verbose: bool = True) 
     # For larger files or when cache fails, use streaming download with progress
     session = get_http_session()
 
+    total_size = 0
+
     if verbose:
         total_size = get_request_file_size(fetchurl)
 
@@ -206,10 +208,10 @@ def fetch_url(fetchurl: str, fpath: Optional[str] = None, verbose: bool = True) 
     filename = fpath or os.path.basename(urlparse(fetchurl).path)
 
     downloaded_size = 0
-    chunk_size = 10 * 1024
+    chunk_size = 64 * 1024  # Increased chunk size for better performance
 
     with open(filename, 'wb') as out_file:
-        if verbose:
+        if verbose and total_size > 0:
             progress("Completed : 0%", end='')
         completed_last = 0
         for chunk in response.iter_content(chunk_size=chunk_size):
@@ -217,7 +219,7 @@ def fetch_url(fetchurl: str, fpath: Optional[str] = None, verbose: bool = True) 
             downloaded_size += len(chunk)
 
             # progress bar
-            if verbose:
+            if verbose and total_size > 0:
                 completed = downloaded_size * 100 // total_size
                 if completed - completed_last > 10 or completed == 100:
                     print(f"..{completed}%", end='')
